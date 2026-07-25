@@ -1,0 +1,49 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}MemoryEntry index{% endblock %}
+
+{% block body %}
+    <h1>MemoryEntry index</h1>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Title</th>
+                <th>Description</th>
+                <th>Image</th>
+                <th>Date_start</th>
+                <th>Date_end</th>
+                <th>Created_at</th>
+                <th>Updated_at</th>
+                <th>Color</th>
+                <th>actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for memory_entry in memory_entries %}
+            <tr>
+                <td>{{ memory_entry.id }}</td>
+                <td>{{ memory_entry.title }}</td>
+                <td>{{ memory_entry.description }}</td>
+                <td>{{ memory_entry.image }}</td>
+                <td>{{ memory_entry.dateStart ? memory_entry.dateStart|date('Y-m-d') : '' }}</td>
+                <td>{{ memory_entry.dateEnd ? memory_entry.dateEnd|date('Y-m-d') : '' }}</td>
+                <td>{{ memory_entry.createdAt ? memory_entry.createdAt|date('Y-m-d H:i:s') : '' }}</td>
+                <td>{{ memory_entry.updatedAt ? memory_entry.updatedAt|date('Y-m-d H:i:s') : '' }}</td>
+                <td>{{ memory_entry.color }}</td>
+                <td>
+                    <a href="{{ path('app_memory_entry_show', {'id': memory_entry.id}) }}">show</a>
+                    <a href="{{ path('app_memory_entry_edit', {'id': memory_entry.id}) }}">edit</a>
+                </td>
+            </tr>
+        {% else %}
+            <tr>
+                <td colspan="10">no records found</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <a href="{{ path('app_memory_entry_new') }}">Create new</a>
+{% endblock %}
