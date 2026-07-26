@@ -18,6 +18,7 @@ Thumbs.db
 */.env
 */.env.local
 */.env.*.local
+Backend-Core-Memory/var/data_dev.db
 
 ### === Node / Vue.js (frontend) === ###
 **/node_modules/
