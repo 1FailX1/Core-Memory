@@ -140,8 +140,8 @@ function EventTimelineView({ entries, onEdit, onAdd, onSelectedTypeChange }) {
         } else {
           setZoom((prev) => {
             const delta = e.deltaY > 0 ? -0.1 : 0.1;
-            if (delta + prev < 0.5) return 0.5;
-            else if (delta + prev > 5) return 5;
+            if (delta + prev < 0.8) return 0.8;
+            else if (delta + prev > 15) return 15;
             else return delta + prev;
           });
         }
@@ -232,6 +232,7 @@ function EventTimelineView({ entries, onEdit, onAdd, onSelectedTypeChange }) {
         positionedMajorEvents.sort((a, b) => a.x - b.x),
         BASE_MARKER_Y,
         barHeight,
+        zoom,
       ),
     );
     setMinorEventsWithLanes(
@@ -239,6 +240,7 @@ function EventTimelineView({ entries, onEdit, onAdd, onSelectedTypeChange }) {
         positionedMinorEvents.sort((a, b) => a.x - b.x),
         BASE_MARKER_Y,
         barHeight,
+        zoom,
       ),
     );
     setCoreMemoriesWithLanes(
@@ -246,6 +248,7 @@ function EventTimelineView({ entries, onEdit, onAdd, onSelectedTypeChange }) {
         positionedCoreMemories.sort((a, b) => a.x - b.x),
         BASE_MARKER_Y,
         barHeight,
+        zoom,
       ),
     );
     setGenericEntriesWithLanes(
@@ -253,6 +256,7 @@ function EventTimelineView({ entries, onEdit, onAdd, onSelectedTypeChange }) {
         positionedGenericEntries.sort((a, b) => a.x - b.x),
         BASE_MARKER_Y,
         barHeight,
+        zoom,
       ),
     );
     setMinorPeriodsWithLanes(
@@ -260,6 +264,7 @@ function EventTimelineView({ entries, onEdit, onAdd, onSelectedTypeChange }) {
         positionedMinorPeriods.sort((a, b) => a.x - b.x),
         BASE_MARKER_Y,
         barHeight,
+        zoom,
       ),
     );
 
@@ -349,14 +354,20 @@ function EventTimelineView({ entries, onEdit, onAdd, onSelectedTypeChange }) {
     setYearlyMarkers(yearlyMarkersWithX);
   }, [entries, barWidth, barHeight, zoom]);
 
-  const addLanesToEvents = (sortedEvents, markerYPosition, barHeight) => {
+  const addLanesToEvents = (
+    sortedEvents,
+    markerYPosition,
+    barHeight,
+    zoomFactor,
+  ) => {
     let lanes = [];
     const markerYOffsetPx =
       ((markerYPosition - BASE_MARKER_Y) / 100) * barHeight;
 
     return sortedEvents.map((ev) => {
       const labelWidth = estimatedLabelWidth(ev.title);
-      const labelStartX = ev.x + horizontalLength;
+      const eventX = ev.x * zoomFactor;
+      const labelStartX = eventX + horizontalLength;
       const labelEndX = labelStartX + labelWidth;
 
       let lane = 0;
