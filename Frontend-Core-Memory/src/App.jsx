@@ -22,7 +22,7 @@ function App() {
         setMemoryEntries(response.data);
       })
       .catch((error) => {
-        console.error("Error fetching entry types:", error);
+        console.error("Error fetching memory entries:", error);
       });
   }, []);
 
@@ -39,19 +39,16 @@ function App() {
 
   const handleAddClick = (date) => {
     if (date) {
-      console.log("handleAddClick called! + date: " + date);
       const newEntry = {
         date_start: date,
       };
       setEditingEntry(newEntry);
     }
-    //console.log(editingEntry);
     setIsOpen(true);
   };
 
   const handleEditClick = (entry) => {
     setEditingEntry(entry);
-    //console.log("handleEditClick called!")
     setIsOpen(true);
   };
 
