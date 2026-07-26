@@ -1,7 +1,14 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 
-function OverlayMenu({ onClose, onSubmit, onDelete, initialData, entryTypes }) {
+function OverlayMenu({
+  onClose,
+  onSubmit,
+  onDelete,
+  initialData,
+  entryTypes,
+  initialType = "",
+}) {
   const [isEditing, setIsEditing] = useState(!initialData?.title);
   // If creating a new entry → start in edit mode
   // If opening an existing entry → start in view mode
@@ -12,12 +19,18 @@ function OverlayMenu({ onClose, onSubmit, onDelete, initialData, entryTypes }) {
     initialData?.description || "",
   );
   const [type, setType] = useState(
-    initialData?.MemoryType?.type || "Major Event",
+    initialData?.MemoryType?.type || initialType || "Major Event",
   );
   const [dateStart, setDateStart] = useState(initialData?.date_start || "");
   const [dateEnd, setDateEnd] = useState(initialData?.date_end || "");
   const [image, setImage] = useState(initialData?.image || null);
   const [color, setColor] = useState(initialData?.color || "");
+
+  useEffect(() => {
+    if (!initialData?.title && initialType) {
+      setType(initialType);
+    }
+  }, [initialData?.title, initialType]);
 
   const isPeriodType = type === "Minor Period" || type === "Major Period";
 

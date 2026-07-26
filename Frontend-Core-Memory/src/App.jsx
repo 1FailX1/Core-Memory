@@ -10,6 +10,7 @@ import Header from "./components/Header.jsx";
 function App() {
   const [memoryEntries, setMemoryEntries] = useState([]);
   const [entryTypes, setEntryTypes] = useState([]);
+  const [timelineSelectedType, setTimelineSelectedType] = useState("");
   const [editingEntry, setEditingEntry] = useState(null);
   const [isOpen, setIsOpen] = useState(false);
   const [active, setActive] = useState(0);
@@ -37,10 +38,11 @@ function App() {
       });
   }, []);
 
-  const handleAddClick = (date) => {
+  const handleAddClick = (date, typeFromTimeline = "") => {
     if (date) {
       const newEntry = {
         date_start: date,
+        MemoryType: typeFromTimeline ? { type: typeFromTimeline } : undefined,
       };
       setEditingEntry(newEntry);
     }
@@ -83,6 +85,8 @@ function App() {
     setEditingEntry(null);
   };
 
+  const addInitialType = active === 0 && !editingEntry?.title ? timelineSelectedType : "";
+
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
       {/* ======= TOP NAVBAR ======= */}
@@ -111,6 +115,7 @@ function App() {
                 entries={memoryEntries}
                 onEdit={handleEditClick}
                 onAdd={handleAddClick}
+                onSelectedTypeChange={setTimelineSelectedType}
               />
             )}
           </div>
@@ -122,6 +127,7 @@ function App() {
         <OverlayMenu
           initialData={editingEntry}
           entryTypes={entryTypes}
+          initialType={addInitialType}
           onClose={handleClosingOverlayMenu}
           onSubmit={handleOverlaySubmit}
           onDelete={handleDeletion}

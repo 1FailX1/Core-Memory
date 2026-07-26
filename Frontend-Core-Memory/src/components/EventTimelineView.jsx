@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import axios from "axios";
 
-function EventTimelineView({ entries, onEdit, onAdd }) {
+function EventTimelineView({ entries, onEdit, onAdd, onSelectedTypeChange }) {
   const barRef = useRef(null);
   const [barWidth, setBarWidth] = useState(0);
   const [hoveredEvent, setHoveredEvent] = useState(null);
@@ -162,6 +162,12 @@ function EventTimelineView({ entries, onEdit, onAdd }) {
       setSelectedType(selectableEntryTypes[0].type);
     }
   }, [selectableEntryTypes, selectedType]);
+
+  useEffect(() => {
+    if (selectedType && onSelectedTypeChange) {
+      onSelectedTypeChange(selectedType);
+    }
+  }, [onSelectedTypeChange, selectedType]);
 
   useLayoutEffect(() => {
     const majorPeriods = entries.filter(
@@ -592,7 +598,7 @@ function EventTimelineView({ entries, onEdit, onAdd }) {
 
               if (!hoveredEvent) {
                 const dateToUse = scrollAdjustedDate || baseDate;
-                onAdd(dateToUse);
+                onAdd(dateToUse, selectedType);
               }
             }}
             style={{
