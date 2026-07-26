@@ -85,7 +85,8 @@ function App() {
     setEditingEntry(null);
   };
 
-  const addInitialType = active === 0 && !editingEntry?.title ? timelineSelectedType : "";
+  const addInitialType =
+    active === 0 && !editingEntry?.title ? timelineSelectedType : "";
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
