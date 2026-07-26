@@ -1,26 +1,36 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}MemoryType{% endblock %}
+{% block title %}MemoryType
+{% endblock %}
 
 {% block body %}
-    <h1>MemoryType</h1>
+	<h1>MemoryType</h1>
 
-    <table class="table">
-        <tbody>
-            <tr>
-                <th>Id</th>
-                <td>{{ memory_type.id }}</td>
-            </tr>
-            <tr>
-                <th>Type</th>
-                <td>{{ memory_type.type }}</td>
-            </tr>
-        </tbody>
-    </table>
+	<table class="table">
+		<tbody>
+			<tr>
+				<th>Id</th>
+				<td>{{ memory_type.id }}</td>
+			</tr>
+			<tr>
+				<th>Type</th>
+				<td>{{ memory_type.type }}</td>
+			</tr>
+			<tr>
+				<th>Color</th>
+				<td>
+					{% if memory_type.color %}
+						<span style="display:inline-block;width:0.75rem;height:0.75rem;border-radius:999px;background-color:{{ memory_type.color }};margin-right:0.5rem;"></span>
+						{{ memory_type.color }}
+					{% endif %}
+				</td>
+			</tr>
+		</tbody>
+	</table>
 
-    <a href="{{ path('app_memory_type_index') }}">back to list</a>
+	<a href="{{ path('app_memory_type_index') }}">back to list</a>
 
-    <a href="{{ path('app_memory_type_edit', {'id': memory_type.id}) }}">edit</a>
+	<a href="{{ path('app_memory_type_edit', {'id': memory_type.id}) }}">edit</a>
 
-    {{ include('memory_type/_delete_form.html.twig') }}
+	{{ include('memory_type/_delete_form.html.twig') }}
 {% endblock %}

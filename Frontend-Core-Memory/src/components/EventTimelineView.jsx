@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import axios from "axios";
 
 function EventTimelineView({ entries, onEdit, onAdd }) {
   const barRef = useRef(null);
@@ -24,6 +25,7 @@ function EventTimelineView({ entries, onEdit, onAdd }) {
   const [majorEventsWithLanes, setMajorEventsWithLanes] = useState([]);
   const [coreMemoriesWithLanes, setCoreMemoriesWithLanes] = useState([]);
   const [minorPeriodsWithLanes, setMinorPeriodsWithLanes] = useState([]);
+  const [genericEntriesWithLanes, setGenericEntriesWithLanes] = useState([]);
   const [positionedMajorPeriods, setPositionedMajorPeriods] = useState([]);
 
   const [yearlyMarkers, setYearlyMarkers] = useState([]);
@@ -36,17 +38,19 @@ function EventTimelineView({ entries, onEdit, onAdd }) {
   const hoverTimeoutRef = useRef(null);
 
   const DEFAULT_COLOR = "#e9e9e9ff";
+  const BASIC_MARKER_COLOR = "#6b7280";
   const getColor = (seg) => seg.color || DEFAULT_COLOR;
+  const knownTypes = new Set([
+    "Major Event",
+    "Minor Event",
+    "Core Memory",
+    "Minor Period",
+    "Major Period",
+  ]);
   let gradientParts = [];
   let currentPos = 0;
 
-  const BASE_MARKER_Y = 40;
-  const markerYPositions = {
-    "Major Event": 20,
-    "Minor Event": 35,
-    "Core Memory": 70,
-    "Minor Period": 85,
-  };
+  const BASE_MARKER_Y = 44;
 
   const estimatedLabelWidth = (title) => title.length * 10;
   const baseVertical = 130;
@@ -59,8 +63,23 @@ function EventTimelineView({ entries, onEdit, onAdd }) {
   const [isTransitioning, setIsTransitioning] = useState(false);
 
   const [selectedType, setSelectedType] = useState("");
+  const [entryTypes, setEntryTypes] = useState([]);
+  const selectableEntryTypes = entryTypes.filter(
+    (type) => type.type !== "Major Period",
+  );
   const isSelected = (type) => selectedType === type;
   const [isDragging, setIsDragging] = useState(false);
+
+  useEffect(() => {
+    axios
+      .get("https://127.0.0.1:8000/type/api")
+      .then((response) => {
+        setEntryTypes(response.data);
+      })
+      .catch((error) => {
+        console.error("Error fetching entry types for timeline:", error);
+      });
+  }, []);
 
   useEffect(() => {
     // 1. Immediately hide labels (no animation)
@@ -129,8 +148,20 @@ function EventTimelineView({ entries, onEdit, onAdd }) {
       };
       barRef.current.addEventListener("wheel", handleWheel, { passive: false });
     }
-    setSelectedType("Major Event");
   }, []);
+
+  useEffect(() => {
+    if (!selectableEntryTypes.length) {
+      return;
+    }
+
+    if (
+      !selectedType ||
+      !selectableEntryTypes.some((type) => type.type === selectedType)
+    ) {
+      setSelectedType(selectableEntryTypes[0].type);
+    }
+  }, [selectableEntryTypes, selectedType]);
 
   useLayoutEffect(() => {
     const majorPeriods = entries.filter(
@@ -148,6 +179,9 @@ function EventTimelineView({ entries, onEdit, onAdd }) {
     const coreMemories = entries.filter(
       (ev) => ev.MemoryType.type === "Core Memory",
     );
+    const genericEntries = entries.filter(
+      (ev) => !knownTypes.has(ev.MemoryType?.type),
+    );
 
     // Computing all label positions
     const positionedMajorEvents = majorEvents.map((ev) => ({
@@ -161,6 +195,10 @@ function EventTimelineView({ entries, onEdit, onAdd }) {
     }));
 
     const positionedCoreMemories = coreMemories.map((ev) => ({
+      ...ev,
+      x: ((new Date(ev.date_start) - startDate) / totalMs) * barWidth,
+    }));
+    const positionedGenericEntries = genericEntries.map((ev) => ({
       ...ev,
       x: ((new Date(ev.date_start) - startDate) / totalMs) * barWidth,
     }));
@@ -186,28 +224,35 @@ function EventTimelineView({ entries, onEdit, onAdd }) {
     setMajorEventsWithLanes(
       addLanesToEvents(
         positionedMajorEvents.sort((a, b) => a.x - b.x),
-        markerYPositions["Major Event"],
+        BASE_MARKER_Y,
         barHeight,
       ),
     );
     setMinorEventsWithLanes(
       addLanesToEvents(
         positionedMinorEvents.sort((a, b) => a.x - b.x),
-        markerYPositions["Minor Event"],
+        BASE_MARKER_Y,
         barHeight,
       ),
     );
     setCoreMemoriesWithLanes(
       addLanesToEvents(
         positionedCoreMemories.sort((a, b) => a.x - b.x),
-        markerYPositions["Core Memory"],
+        BASE_MARKER_Y,
+        barHeight,
+      ),
+    );
+    setGenericEntriesWithLanes(
+      addLanesToEvents(
+        positionedGenericEntries.sort((a, b) => a.x - b.x),
+        BASE_MARKER_Y,
         barHeight,
       ),
     );
     setMinorPeriodsWithLanes(
       addLanesToEvents(
         positionedMinorPeriods.sort((a, b) => a.x - b.x),
-        markerYPositions["Minor Period"],
+        BASE_MARKER_Y,
         barHeight,
       ),
     );
@@ -215,19 +260,23 @@ function EventTimelineView({ entries, onEdit, onAdd }) {
     setAllPositionedEvents([
       ...positionedMajorEvents.map((ev) => ({
         ...ev,
-        y: markerYPositions["Major Event"],
+        y: BASE_MARKER_Y,
       })),
       ...positionedMinorEvents.map((ev) => ({
         ...ev,
-        y: markerYPositions["Minor Event"],
+        y: BASE_MARKER_Y,
       })),
       ...positionedCoreMemories.map((ev) => ({
         ...ev,
-        y: markerYPositions["Core Memory"],
+        y: BASE_MARKER_Y,
+      })),
+      ...positionedGenericEntries.map((ev) => ({
+        ...ev,
+        y: BASE_MARKER_Y,
       })),
       ...positionedMinorPeriods.map((ev) => ({
         ...ev,
-        y: markerYPositions["Minor Period"],
+        y: BASE_MARKER_Y,
       })),
     ]);
 
@@ -353,18 +402,19 @@ function EventTimelineView({ entries, onEdit, onAdd }) {
           })
         : "";
 
-  const renderEntryWithLeader = (ev, color, markerYPosition, markerStyle) => {
+  const renderEntryWithLeader = (ev, color, typeName, markerStyle) => {
     const angle = (80 * Math.PI) / 180;
     const dx = ev.verticalLength * Math.cos(angle);
     const dy = ev.verticalLength * Math.sin(angle);
-    const verticalTop = `calc(${markerYPositions[markerYPosition]}% - ${dy}px)`;
+    const verticalTop = `calc(${BASE_MARKER_Y}% - ${dy}px)`;
     const horizontalLeft = ev.x + dx;
+    const isTypeSelected = isSelected(typeName);
 
     return (
       <div
         key={ev.id}
         onMouseEnter={(e) => {
-          if (isSelected(markerYPosition)) {
+          if (isTypeSelected) {
             scheduleHoverPreview(ev, e.clientX, e.clientY);
           }
         }}
@@ -387,9 +437,7 @@ function EventTimelineView({ entries, onEdit, onAdd }) {
           onEdit(ev);
         }}
         className={`${
-          !isSelected(markerYPosition)
-            ? "opacity-10 cursor-default"
-            : "cursor-pointer"
+          !isTypeSelected ? "opacity-10 cursor-default" : "cursor-pointer"
         } group transition-opacity duration-200 ease-out`}
       >
         <div
@@ -401,7 +449,7 @@ function EventTimelineView({ entries, onEdit, onAdd }) {
               markerStyle == "period-minor"
                 ? (ev.xStart + ev.xEnd) / 2
                 : ev.x * zoom,
-            top: `${markerYPositions[markerYPosition]}%`,
+            top: `${BASE_MARKER_Y}%`,
             ...(markerStyle == "period-minor" && {
               width: ev.xEnd - ev.xStart,
             }),
@@ -413,12 +461,12 @@ function EventTimelineView({ entries, onEdit, onAdd }) {
         <div
           className={`leader-vertical w-[2px] absolute 
                   transition-[left,width] duration-200 ease-in-out
-                  ${isSelected(markerYPosition) && "group-hover:w-[4px]"}
+                  ${isSelected(BASE_MARKER_Y) && "group-hover:w-[4px]"}
                 `}
           style={{
             left: ev.x * zoom,
             height: `${ev.verticalLength}px`,
-            top: `${markerYPositions[markerYPosition]}%`,
+            top: `${BASE_MARKER_Y}%`,
             backgroundColor: ev.color ? ev.color : color,
           }}
         />
@@ -426,7 +474,7 @@ function EventTimelineView({ entries, onEdit, onAdd }) {
         <div
           className={`leader-horizontal h-[2px] absolute 
                   transition-[left,height] duration-200 ease-in-out
-                  ${isSelected(markerYPosition) && "group-hover:h-[4px]"}
+              ${isTypeSelected && "group-hover:h-[4px]"}
                 `}
           style={{
             width: `${ev.horizontalLength}px`,
@@ -439,11 +487,11 @@ function EventTimelineView({ entries, onEdit, onAdd }) {
         <div
           className={`leader-label bg-white/80 text-sm absolute
     transition-[left,font-weight] duration-200 ease-in-out z-20
-    ${isSelected(markerYPosition) && "group-hover:font-bold group:hover"}
+    ${isTypeSelected && "group-hover:font-bold group:hover"}
   `}
           style={{
             left: `${ev.x * zoom + dx + ev.horizontalLength + 4}px`,
-            top: `calc(${markerYPositions[markerYPosition]}% - ${dy}px - 8px)`,
+            top: `calc(${BASE_MARKER_Y}% - ${dy}px - 8px)`,
           }}
         >
           {ev.title}
@@ -484,58 +532,21 @@ function EventTimelineView({ entries, onEdit, onAdd }) {
 
   return (
     <div>
-      <div className="mb-[30vh] flex flex-row justify-center *:transition-all *:duration-100 *:ease-in">
-        {/* Major Memory */}
-        <button
-          onClick={() => setSelectedType("Major Event")}
-          className={`px-2 py-2 border-l-2 border-t-2 border-b-2 rounded-l-xl
-       ${
-         isSelected("Major Event")
-           ? "transitionbg-orange-200 text-orange-700 border-orange-300 shadow-[0_8px_20px_rgba(0,0,0,0.3)] ("
-           : "bg-orange-600 text-orange-100 border-red-700 hover:bg-orange-200 hover:text-orange-700 hover:border-orange-300"
-       }`}
-        >
-          Major Memory
-        </button>
-
-        {/* Minor Memory */}
-        <button
-          onClick={() => setSelectedType("Minor Event")}
-          className={`px-2 py-2 border-t-2 border-b-2
-       ${
-         isSelected("Minor Event")
-           ? "bg-gray-200 text-gray-600 border-gray-300 shadow-[0_8px_20px_rgba(0,0,0,0.3)]"
-           : "bg-gray-800 text-gray-300 border-gray-700 hover:bg-gray-200 hover:text-gray-600 hover:border-gray-300"
-       }`}
-        >
-          Minor Memory
-        </button>
-
-        {/* Core Memory */}
-        <button
-          onClick={() => setSelectedType("Core Memory")}
-          className={`px-2 py-2 border-t-2 border-b-2
-       ${
-         isSelected("Core Memory")
-           ? "bg-yellow-200 text-yellow-600 border-yellow-300 shadow-[0_8px_20px_rgba(0,0,0,0.3)]"
-           : "bg-yellow-500 text-yellow-100 border-yellow-600 hover:bg-yellow-200 hover:text-yellow-600 hover:border-yellow-300"
-       }`}
-        >
-          Core Memory
-        </button>
-
-        {/* Minor Period */}
-        <button
-          onClick={() => setSelectedType("Minor Period")}
-          className={`px-2 py-2 border-t-2 border-b-2 border-r-2 rounded-r-xl
-       ${
-         isSelected("Minor Period")
-           ? "bg-green-300 text-green-700 border-green-400 shadow-[0_8px_20px_rgba(0,0,0,0.3)]"
-           : "bg-green-700 text-green-100 border-green-800 hover:bg-green-300 hover:text-green-700 hover:border-green-400"
-       }`}
-        >
-          Minor Period
-        </button>
+      <div className="mb-[30vh] flex justify-center">
+        <label className="flex items-center gap-3 rounded-full border border-gray-300 bg-white px-4 py-2 shadow-sm">
+          <span className="text-sm font-medium text-gray-600">Entry type</span>
+          <select
+            value={selectedType}
+            onChange={(e) => setSelectedType(e.target.value)}
+            className="min-w-48 rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-sm text-gray-800 outline-none transition focus:border-blue-400 focus:bg-white"
+          >
+            {selectableEntryTypes.map((type) => (
+              <option key={type.id} value={type.type}>
+                {type.type}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
 
       <div className="relative w-full before:overflow-hidden flex justify-center">
@@ -625,7 +636,7 @@ function EventTimelineView({ entries, onEdit, onAdd }) {
               return (
                 <div
                   key={"marker-" + i}
-                  className={`absolute bg-gray-500 top-[45%] bottom-[45%] 
+                  className={`absolute bg-gray-500 top-[55%] bottom-[35%] 
                             ${hideLabels ? "opacity-0" : ""}
     ${showLabels ? "opacity-80 transition-opacity duration-200 ease-out" : "opacity-0"}
     }`}
@@ -652,7 +663,7 @@ function EventTimelineView({ entries, onEdit, onAdd }) {
     }`}
                   style={{
                     left: midX,
-                    top: "50%",
+                    top: "60%",
                     transform: "translate(-50%, -50%)",
                   }}
                 >
@@ -699,6 +710,16 @@ function EventTimelineView({ entries, onEdit, onAdd }) {
                 "#ffa600ff",
                 "Core Memory",
                 "marker-core-memory",
+              );
+            })}
+
+            {/* ======== GENERIC ENTRIES ======== */}
+            {genericEntriesWithLanes.map((ev) => {
+              return renderEntryWithLeader(
+                ev,
+                BASIC_MARKER_COLOR,
+                ev.MemoryType?.type || "Basic Entry",
+                "marker-basic",
               );
             })}
           </div>

@@ -371,7 +371,7 @@ function OverlayMenu({ onClose, onSubmit, onDelete, initialData, entryTypes }) {
 
             {/* Buttons */}
             <div className="flex justify-between py-4">
-              {initialData.title && (
+              {initialData?.title && (
                 <button
                   onClick={() => setIsEditing(false)}
                   className="p-2 bg-yellow-300 text-yellow-900 rounded hover:bg-yellow-400 transition flex flex-row gap-2"
@@ -418,7 +418,7 @@ function OverlayMenu({ onClose, onSubmit, onDelete, initialData, entryTypes }) {
                   <span>Save</span>
                 </button>
 
-                {initialData.title && (
+                {initialData?.title && (
                   <button
                     onClick={() => onDelete(memoryId)}
                     className="p-2 bg-red-500 text-white rounded hover:bg-red-600 transition flex flex-row gap-2"

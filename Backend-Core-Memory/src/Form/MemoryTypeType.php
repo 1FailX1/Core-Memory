@@ -13,6 +13,7 @@ class MemoryTypeType extends AbstractType
     {
         $builder
             ->add('type')
+            ->add('color')
         ;
     }
 
